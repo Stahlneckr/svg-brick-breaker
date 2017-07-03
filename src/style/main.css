@@ -1,0 +1,50 @@
+@import 'reset.css';
+@import 'vars.css';
+
+@font-face {
+  font-family: 'sf-ui-display';
+  src: url('../assets/fonts/sf-ui-display-black.woff2') format('woff2'),
+       url('../assets/fonts/sf-ui-display-black.woff') format('woff'),
+       url('../assets/fonts/sf-ui-display-black.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'sf-ui';
+  src: url('../assets/fonts/sf-ui-text-regular.woff2') format('woff2'),
+       url('../assets/fonts/sf-ui-text-regular.woff') format('woff'),
+       url('../assets/fonts/sf-ui-text-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'sf-ui';
+  src: url('../assets/fonts/sf-ui-text-bold.woff2') format('woff2'),
+       url('../assets/fonts/sf-ui-text-bold.woff') format('woff'),
+       url('../assets/fonts/sf-ui-text-bold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'sf-ui';
+  src: url('../assets/fonts/sf-ui-text-light.woff2') format('woff2'),
+       url('../assets/fonts/sf-ui-text-light.woff') format('woff'),
+       url('../assets/fonts/sf-ui-text-light.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+}
+
+html, body { width: 100%; height: 100%; }
+
+.container {
+  width: 100%;
+  height: 100%;
+  font-family: 'sf-ui';
+  font-size: var(--fontSize, 14px);
+  & #brick-breaker {
+
+  }
+}
