@@ -13,14 +13,11 @@ var Main = function () {
     height: 0,
     ball: null,
     ballColor: null,
-    paddleLeft: null,
     paddle: null,
     paddleDir: null,
     draw: null,
-    playerLeft: null,
-    playerRight: null,
-    scoreLeft: null,
-    scoreRight: null,
+    lives: null,
+    livesDisplay: null,
     init() {
       this.width = document.body.clientWidth;
       this.height = document.body.clientHeight;
@@ -47,8 +44,8 @@ var Main = function () {
 
       this.draw.on('click', () => {
         if(this.vx === 0 && this.vy === 0) {
-          this.vx = Math.random() * 750 - 150
-          this.vy = Math.random() * 750 - 150
+          this.vx = (Math.random() * 500)-250
+          this.vy = Math.random() * 500
         }
       })
     },
@@ -58,9 +55,6 @@ var Main = function () {
       // vertical divider line
       // var line = draw.line(this.width/2, 0, this.width/2, this.height);
       // line.stroke({ width: 5, color: '#fff', dasharray: '5,5' });
-
-      this.paddleLeft = this.draw.rect(PADDLE_W, PADDLE_H);
-      this.paddleLeft.x(this.width/2).cy(this.height-(PADDLE_H/2)).fill('#00ff99'); // #ff0066
 
       // = PADDLE =
       this.paddle = this.draw.rect(PADDLE_W, PADDLE_H);
@@ -73,21 +67,15 @@ var Main = function () {
       this.ball = this.draw.circle(ballSize);
       this.ball.center(this.width/2, this.height/2).fill('#7f7f7f');
 
-      // = SCORE =
-      // define initial player score
-      this.playerLeft = this.playerRight = 0
-      // create text for the score, set font properties
-      this.scoreLeft = this.draw.text(this.playerLeft+'').font({
+      // = LIVES =
+      this.lives = 3
+      // create text for lives, set font properties
+      this.livesDisplay = this.draw.text(this.lives+'').font({
         size: 32,
         family: 'Menlo, sans-serif',
         anchor: 'end',
         fill: '#fff'
-      }).move(this.width/2-10, 10)
-      // cloning rocks!
-      this.scoreRight = this.scoreLeft.clone()
-        .text(this.playerRight+'')
-        .font('anchor', 'start')
-        .x(this.width/2+10)
+      }).move(this.width/2, 10)
     },
     updateLoop(dt) {
       // move the ball by its velocity
@@ -97,46 +85,40 @@ var Main = function () {
       var cx = this.ball.cx()
         , cy = this.ball.cy()
 
-      // get position of ball and paddle
-      var paddleLeftCy = this.paddleLeft.cy()
 
-      // move the left paddle in the direction of the ball
-      var dy = Math.min(DIFFICULTY, Math.abs(cy - paddleLeftCy))
-      paddleLeftCy += cy > paddleLeftCy ? dy : -dy
+      // // move the left paddle in the direction of the ball
+      // var dy = Math.min(DIFFICULTY, Math.abs(cy - paddleLeftCy))
+      // paddleLeftCy += cy > paddleLeftCy ? dy : -dy
 
-      // constraint the move to the canvas area
-      this.paddleLeft.cy(Math.max(PADDLE_H/2, Math.min(this.height-PADDLE_H/2, paddleLeftCy)))
+      // // constraint the move to the canvas area
+      // this.paddleLeft.cy(Math.max(PADDLE_H/2, Math.min(this.height-PADDLE_H/2, paddleLeftCy)))
 
       // check if we hit top/bottom borders
-      if ((this.vy < 0 && cy <= 0) || (this.vy > 0 && cy >= this.height)) {
+      if (this.vy < 0 && cy <= 0) {
         this.vy = -this.vy
       }
-
-      var paddleLeftY = this.paddleLeft.y()
-        , paddleY = this.paddle.y()
-
-      // check if we hit the paddle
-      if((this.vx < 0 && cx <= PADDLE_W && cy > paddleLeftY && cy < paddleLeftY + PADDLE_H) ||
-         (this.vx > 0 && cx >= this.width - PADDLE_W && cy > paddleY && cy < paddleY + PADDLE_H)) {
-        // depending on where the ball hit we adjust y velocity
-        // for more realistic control we would need a bit more math here
-        // just keep it simple
-        this.vy = (cy - ((this.vx < 0 ? paddleLeftY : paddleY) + PADDLE_H/2)) * 7 // magic factor
-
-        // make the ball faster on hit
-        this.vx = -this.vx * 1.10
-      } else
-
       // check if we hit left/right borders
       if ((this.vx < 0 && cx <= 0) || (this.vx > 0 && cx >= this.width)) {
-        // when x-velocity is negative, it's a point for player 2, otherwise player 1
-        if(this.vx < 0) { ++this.playerRight }
-        else { ++this.playerLeft }
+        this.vx = -this.vx
+      }
+
+      var paddleX = this.paddle.x()
+
+      // check if we hit the paddle
+      if(this.vy > 0 && cy >= this.height - PADDLE_H && cx > paddleX && cx < paddleX + PADDLE_W) {
+        // depending on where the ball hit we adjust x velocity
+        this.vx = (cx - (paddleX + PADDLE_W/2)) * 7 // magic factor
+
+        // make the ball faster on hit
+        this.vy = -this.vy * 1.10
+
+      } else if (this.vy > 0 && cy >= this.height) {
+
+        --this.lives
+        this.livesDisplay.text(this.lives+'')
 
         this.resetGame()
 
-        this.scoreLeft.text(this.playerLeft+'')
-        this.scoreRight.text(this.playerRight+'')
       }
 
 
@@ -167,8 +149,7 @@ var Main = function () {
     },
     resetGame() {
       // visualize boom
-      // detect winning player
-      var paddle = this.ball.cx() > this.width/2 ? this.paddleLeft : this.paddle
+      var paddle = this.paddle
 
       // create the gradient
       var gradient = this.draw.gradient('radial', function(stop) {
@@ -190,11 +171,10 @@ var Main = function () {
       this.vy = 0
 
       // position the ball back in the middle
-      this.ball.animate(100).center(this.width/2, this.height/2)
+      this.ball.animate(333).center(this.width/2, this.height/2)
 
       // reset the position of the paddles
-      this.paddleLeft.animate(100).cy(this.height/2)
-      this.paddle.animate(100).cy(this.height/2)
+      this.paddle.animate(333).cx(this.width/2)
     }
   };
 }();
