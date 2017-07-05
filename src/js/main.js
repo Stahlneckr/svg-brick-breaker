@@ -2,120 +2,136 @@ const DIFFICULTY = 2;
 const PADDLE_SPEED = 5;
 const PADDLE_H = 20;
 const PADDLE_W = 100;
+const BRICK_H = 20;
+const BRICK_W = 100;
+const BRICK_MARGIN = 5;
 
 var Main = function () {
   return {
-    vx: 0,
-    vy: 0,
-    lastTime: null,
-    animFram: null,
-    width: 0,
-    height: 0,
-    ball: null,
-    ballColor: null,
-    paddle: null,
-    paddleDir: null,
     draw: null,
-    lives: null,
-    livesDisplay: null,
+    ball: {
+      pos: null,
+      vx: 0,
+      vy: 0,
+      color: null,
+    },
+    scene: {
+      width: 0,
+      height: 0,
+      lastTime: null,
+      animFram: null,
+      livesDisplay: null
+    },
+    player: {
+      paddle: null,
+      paddleDir: null,
+      lives: null
+    },
     init() {
-      this.width = document.body.clientWidth;
-      this.height = document.body.clientHeight;
+      this.scene.width = document.body.clientWidth;
+      this.scene.height = document.body.clientHeight;
 
       this.drawScene();
-      this.animationFrame(0);
       this.setUpEvents();
-
-      // ball color update
-      this.ballColor = new SVG.Color('#ff0066')
-      this.ballColor.morph('#00ff99')
-    },
-    setUpEvents() {
-      SVG.on(document, 'keydown', (e) => {
-        console.log("keying");
-        this.paddleDir = e.keyCode == 37 ? -1 : e.keyCode == 39 ? 1 : 0
-        e.preventDefault()
-      })
-
-      SVG.on(document, 'keyup', (e) => {
-        this.paddleDir = 0
-        e.preventDefault()
-      })
-
-      this.draw.on('click', () => {
-        if(this.vx === 0 && this.vy === 0) {
-          this.vx = (Math.random() * 500)-250
-          this.vy = Math.random() * 500
-        }
-      })
+      this.animationFrame(0);
     },
     drawScene() {
-      this.draw = SVG('brick-breaker').size(this.width, this.height);
-      var background = this.draw.rect(this.width, this.height).fill('#E3E8E6');
-      // vertical divider line
-      // var line = draw.line(this.width/2, 0, this.width/2, this.height);
-      // line.stroke({ width: 5, color: '#fff', dasharray: '5,5' });
+      this.draw = SVG('brick-breaker').size(this.scene.width, this.scene.height);
+      var background = this.draw.rect(this.scene.width, this.scene.height).fill('#E3E8E6');
 
       // = PADDLE =
-      this.paddle = this.draw.rect(PADDLE_W, PADDLE_H);
-      this.paddle.x(this.width/2).cy(this.height-(PADDLE_H/2)).fill('#00ff99'); // #ff0066
+      this.player.paddle = this.draw.rect(PADDLE_W, PADDLE_H);
+      this.player.paddle.x(this.scene.width/2).cy(this.scene.height-(PADDLE_H/2)).fill('#00ff99'); // #ff0066
 
       // = BALL =
       // define ball size
       var ballSize = 20;
+      // ball color
+      this.ball.color = new SVG.Color('#ff0066')
+      this.ball.color.morph('#00ff99')
       // create ball
-      this.ball = this.draw.circle(ballSize);
-      this.ball.center(this.width/2, this.height/2).fill('#7f7f7f');
+      this.ball.pos = this.draw.circle(ballSize);
+      this.ball.pos.center(this.scene.width/2, this.scene.height/2).fill('#7f7f7f');
 
       // = LIVES =
-      this.lives = 3
+      this.player.lives = 3
       // create text for lives, set font properties
-      this.livesDisplay = this.draw.text(this.lives+'').font({
+      this.scene.livesDisplay = this.draw.text(this.player.lives+'').font({
         size: 32,
         family: 'Menlo, sans-serif',
         anchor: 'end',
         fill: '#fff'
-      }).move(this.width/2, 10)
+      }).move(this.scene.width/2, 10)
+
+      // = BRICKS =
+      var line_total = Math.floor(this.scene.width/(BRICK_W+BRICK_MARGIN));
+      var rem = this.scene.width%(BRICK_W+BRICK_MARGIN);
+      var brick;
+      var y = this.scene.height*.1;
+      for(var i=0; i<9; i++) {
+        y = y+BRICK_H+BRICK_MARGIN;
+        var num_bricks = line_total;
+        for(var j=0; j<line_total; j++) {
+          if(i%2 === 0) {
+            brick = this.draw.rect(BRICK_W, BRICK_H);
+            brick.x((rem/2)+(j*(BRICK_W+BRICK_MARGIN))).cy(y).fill('#ff0066');
+          } else if(j < line_total-1) {
+            brick = this.draw.rect(BRICK_W, BRICK_H);
+            brick.x((rem/2)+BRICK_W/2+(j*(BRICK_W+BRICK_MARGIN))).cy(y).fill('#ff0066');
+          }
+        }
+      }
+    },
+    setUpEvents() {
+      SVG.on(document, 'keydown', (e) => {
+        console.log("keying");
+        this.player.paddleDir = e.keyCode == 37 ? -1 : e.keyCode == 39 ? 1 : 0
+        e.preventDefault()
+      })
+
+      SVG.on(document, 'keyup', (e) => {
+        this.player.paddleDir = 0
+        e.preventDefault()
+      })
+
+      this.draw.on('click', () => {
+        if(this.ball.vx === 0 && this.ball.vy === 0) {
+          this.ball.vx = (Math.random() * 500)-250
+          this.ball.vy = Math.random() * 500
+        }
+      })
     },
     updateLoop(dt) {
       // move the ball by its velocity
-      this.ball.dmove(this.vx*dt, this.vy*dt)
+      this.ball.pos.dmove(this.ball.vx*dt, this.ball.vy*dt)
 
       // get position of ball
-      var cx = this.ball.cx()
-        , cy = this.ball.cy()
-
-
-      // // move the left paddle in the direction of the ball
-      // var dy = Math.min(DIFFICULTY, Math.abs(cy - paddleLeftCy))
-      // paddleLeftCy += cy > paddleLeftCy ? dy : -dy
-
-      // // constraint the move to the canvas area
-      // this.paddleLeft.cy(Math.max(PADDLE_H/2, Math.min(this.height-PADDLE_H/2, paddleLeftCy)))
+      var cx = this.ball.pos.cx()
+        , cy = this.ball.pos.cy()
 
       // check if we hit top/bottom borders
-      if (this.vy < 0 && cy <= 0) {
-        this.vy = -this.vy
+      if (this.ball.vy < 0 && cy <= 0) {
+        this.ball.vy = -this.ball.vy
       }
       // check if we hit left/right borders
-      if ((this.vx < 0 && cx <= 0) || (this.vx > 0 && cx >= this.width)) {
-        this.vx = -this.vx
+      if ((this.ball.vx < 0 && cx <= 0) || (this.ball.vx > 0 && cx >= this.scene.width)) {
+        this.ball.vx = -this.ball.vx
       }
 
-      var paddleX = this.paddle.x()
+      var paddleX = this.player.paddle.x()
 
       // check if we hit the paddle
-      if(this.vy > 0 && cy >= this.height - PADDLE_H && cx > paddleX && cx < paddleX + PADDLE_W) {
+      if(this.ball.vy > 0 && cy >= this.scene.height - PADDLE_H && cx > paddleX && cx < paddleX + PADDLE_W) {
         // depending on where the ball hit we adjust x velocity
-        this.vx = (cx - (paddleX + PADDLE_W/2)) * 7 // magic factor
+        this.ball.vx = (cx - (paddleX + PADDLE_W/2)) * 7 // magic factor
 
         // make the ball faster on hit
-        this.vy = -this.vy * 1.10
+        this.ball.vy = -this.ball.vy * 1.10
 
-      } else if (this.vy > 0 && cy >= this.height) {
+      } else if (this.ball.vy > 0 && cy >= this.scene.height) {
 
-        --this.lives
-        this.livesDisplay.text(this.lives+'')
+        this.player.lives--
+        this.scene.livesDisplay.text(this.player.lives+'')
 
         this.resetGame()
 
@@ -123,33 +139,32 @@ var Main = function () {
 
 
       // move player paddle
-      var playerPaddleX = this.paddle.x()
+      var playerPaddleX = this.player.paddle.x()
 
-      if (playerPaddleX <= 0 && this.paddleDir == -1) {
-        this.paddle.cx(PADDLE_W/2)
-      } else if (playerPaddleX >= this.width-PADDLE_W && this.paddleDir == 1) {
-        this.paddle.x(this.width-PADDLE_W)
+      if (playerPaddleX <= 0 && this.player.paddleDir == -1) {
+        this.player.paddle.cx(PADDLE_W/2)
+      } else if (playerPaddleX >= this.scene.width-PADDLE_W && this.player.paddleDir == 1) {
+        this.player.paddle.x(this.scene.width-PADDLE_W)
       } else {
-        this.paddle.dx(this.paddleDir*PADDLE_SPEED)
+        this.player.paddle.dx(this.player.paddleDir*PADDLE_SPEED)
       }
 
-
       // update ball color based on position
-      this.ball.fill(this.ballColor.at(1/this.width*this.ball.x()))
+      this.ball.pos.fill(this.ball.color.at(1/this.scene.width*this.ball.pos.x()))
     },
     animationFrame(ms) {
       // we get passed a timestamp in milliseconds
       // we use it to determine how much time has passed since the last call
-      if (this.lastTime) {
-        this.updateLoop((ms-this.lastTime)/1000) // call update and pass delta time in seconds
+      if (this.scene.lastTime) {
+        this.updateLoop((ms-this.scene.lastTime)/1000) // call update and pass delta time in seconds
       }
 
-      this.lastTime = ms
-      this.animFrame = requestAnimationFrame(this.animationFrame.bind(this))
+      this.scene.lastTime = ms
+      this.scene.animFrame = requestAnimationFrame(this.animationFrame.bind(this))
     },
     resetGame() {
       // visualize boom
-      var paddle = this.paddle
+      var paddle = this.player.paddle
 
       // create the gradient
       var gradient = this.draw.gradient('radial', function(stop) {
@@ -159,7 +174,7 @@ var Main = function () {
 
       // create circle to carry the gradient
       var blast = this.draw.circle(300)
-      blast.center(this.ball.cx(), this.ball.cy()).fill(gradient)
+      blast.center(this.ball.pos.cx(), this.ball.pos.cy()).fill(gradient)
 
       // animate to invisibility
       blast.animate(1000, '>').opacity(0).after(function() {
@@ -167,14 +182,14 @@ var Main = function () {
       })
 
       // reset speed values
-      this.vx = 0
-      this.vy = 0
+      this.ball.vx = 0
+      this.ball.vy = 0
 
       // position the ball back in the middle
-      this.ball.animate(333).center(this.width/2, this.height/2)
+      this.ball.pos.animate(333).center(this.scene.width/2, this.scene.height/2)
 
       // reset the position of the paddles
-      this.paddle.animate(333).cx(this.width/2)
+      this.player.paddle.animate(333).cx(this.scene.width/2)
     }
   };
 }();
