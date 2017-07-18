@@ -5,6 +5,13 @@ const PADDLE_W = 100;
 const BRICK_H = 20;
 const BRICK_W = 100;
 const BRICK_MARGIN = 5;
+const COLORS = {
+  bg: '#212121',
+  ball: '#E53935',
+  ballMorph: '#E53935',
+  paddle: '#E53935',
+  bricks: ['#FFEB3B','#8BC34A','#03A9F4', '#AB47BC']
+}
 
 var Main = function () {
   return {
@@ -20,13 +27,15 @@ var Main = function () {
       height: 0,
       lastTime: null,
       animFram: null,
-      livesDisplay: null
+      pointsDisplay: null
     },
     player: {
       paddle: null,
       paddleDir: null,
-      lives: null
+      points: null
     },
+    bricks: [],
+    brickArea: {},
     init() {
       this.scene.width = document.body.clientWidth;
       this.scene.height = document.body.clientHeight;
@@ -37,49 +46,60 @@ var Main = function () {
     },
     drawScene() {
       this.draw = SVG('brick-breaker').size(this.scene.width, this.scene.height);
-      var background = this.draw.rect(this.scene.width, this.scene.height).fill('#E3E8E6');
+      var background = this.draw.rect(this.scene.width, this.scene.height).fill(COLORS.bg);
 
       // = PADDLE =
       this.player.paddle = this.draw.rect(PADDLE_W, PADDLE_H);
-      this.player.paddle.x(this.scene.width/2).cy(this.scene.height-(PADDLE_H/2)).fill('#00ff99'); // #ff0066
+      this.player.paddle.x(this.scene.width/2).cy(this.scene.height-(PADDLE_H/2)).fill(COLORS.paddle); // #ff0066
 
       // = BALL =
       // define ball size
       var ballSize = 20;
       // ball color
-      this.ball.color = new SVG.Color('#ff0066')
-      this.ball.color.morph('#00ff99')
+      this.ball.color = new SVG.Color(COLORS.ball)
+      this.ball.color.morph(COLORS.ballMorph)
       // create ball
       this.ball.pos = this.draw.circle(ballSize);
-      this.ball.pos.center(this.scene.width/2, this.scene.height/2).fill('#7f7f7f');
+      this.ball.pos.center(this.scene.width/2, this.scene.height/2).fill(COLORS.ball);
 
       // = LIVES =
-      this.player.lives = 3
+      this.player.points = 0
       // create text for lives, set font properties
-      this.scene.livesDisplay = this.draw.text(this.player.lives+'').font({
+      this.scene.pointsDisplay = this.draw.text(this.player.points+'').font({
         size: 32,
         family: 'Menlo, sans-serif',
         anchor: 'end',
-        fill: '#fff'
+        fill: '#eeeeee'
       }).move(this.scene.width/2, 10)
 
+      this.drawBricks()
+    },
+    drawBricks() {
       // = BRICKS =
       var line_total = Math.floor(this.scene.width/(BRICK_W+BRICK_MARGIN));
       var rem = this.scene.width%(BRICK_W+BRICK_MARGIN);
       var brick;
       var y = this.scene.height*.1;
-      for(var i=0; i<9; i++) {
+      for(var i=0; i<8; i++) {
         y = y+BRICK_H+BRICK_MARGIN;
         var num_bricks = line_total;
         for(var j=0; j<line_total; j++) {
           if(i%2 === 0) {
             brick = this.draw.rect(BRICK_W, BRICK_H);
-            brick.x((rem/2)+(j*(BRICK_W+BRICK_MARGIN))).cy(y).fill('#ff0066');
+            brick.x((rem/2)+(j*(BRICK_W+BRICK_MARGIN))).cy(y).fill(COLORS.bricks[Math.floor(i/2)]);
           } else if(j < line_total-1) {
             brick = this.draw.rect(BRICK_W, BRICK_H);
-            brick.x((rem/2)+BRICK_W/2+(j*(BRICK_W+BRICK_MARGIN))).cy(y).fill('#ff0066');
+            brick.x((rem/2)+BRICK_W/2+(j*(BRICK_W+BRICK_MARGIN))).cy(y).fill(COLORS.bricks[Math.floor(i/2)]);
           }
+          this.bricks.push(brick)
         }
+      }
+      // used for more effecient hit detection on bricks
+      this.brickArea = {
+        top: this.bricks[0].y(),
+        bottom: this.bricks[(this.bricks.length)-1].y() + BRICK_H,
+        left: this.bricks[0].x(),
+        right: this.bricks[(this.bricks.length)-1].x() + BRICK_W*2 + BRICK_MARGIN
       }
     },
     setUpEvents() {
@@ -124,19 +144,29 @@ var Main = function () {
       if(this.ball.vy > 0 && cy >= this.scene.height - PADDLE_H && cx > paddleX && cx < paddleX + PADDLE_W) {
         // depending on where the ball hit we adjust x velocity
         this.ball.vx = (cx - (paddleX + PADDLE_W/2)) * 7 // magic factor
-
         // make the ball faster on hit
         this.ball.vy = -this.ball.vy * 1.10
-
       } else if (this.ball.vy > 0 && cy >= this.scene.height) {
-
-        this.player.lives--
-        this.scene.livesDisplay.text(this.player.lives+'')
-
+        // hit the bottom -- lose a life and reset
         this.resetGame()
-
       }
 
+      // check if we hit a brick
+      // check if we're in the right area -- for effeciency we don't technically need this
+      if(cy > this.brickArea.top && cy < this.brickArea.bottom && cx > this.brickArea.left && cx < this.brickArea.right) {
+        // loop through bricks
+        for(var i = 0; i<this.bricks.length; i++) {
+          if(cy > this.bricks[i].y() && cy < this.bricks[i].y()+BRICK_H && cx > this.bricks[i].x()  && cx < this.bricks[i].x()+BRICK_W) {
+            this.ball.vx = (cx - (this.bricks[i].x() + BRICK_W/2)) * 7 // magic factor
+            this.ball.vy = -this.ball.vy;
+            this.bricks[i].remove();
+            this.bricks.splice(i,1);
+            this.player.points++
+            this.scene.pointsDisplay.text(this.player.points+'')
+            break;
+          }
+        }
+      }
 
       // move player paddle
       var playerPaddleX = this.player.paddle.x()
@@ -190,6 +220,15 @@ var Main = function () {
 
       // reset the position of the paddles
       this.player.paddle.animate(333).cx(this.scene.width/2)
+
+      // reset bricks
+      for(var i = 0; i<this.bricks.length; i++) {
+        this.bricks[i].remove();
+        this.bricks.splice(i,1);
+      }
+      this.player.points = 0;
+      this.scene.pointsDisplay.text(this.player.points+'')
+      this.drawBricks()
     }
   };
 }();
