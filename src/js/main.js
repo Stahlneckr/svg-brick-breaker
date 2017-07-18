@@ -53,7 +53,7 @@ var Main = function () {
       this.player.paddle.x(this.scene.width/2).cy(this.scene.height-(PADDLE_H/2)).fill(COLORS.paddle); // #ff0066
 
       // = BALL =
-      // define ball size
+      // ball size
       var ballSize = 20;
       // ball color
       this.ball.color = new SVG.Color(COLORS.ball)
@@ -64,7 +64,7 @@ var Main = function () {
 
       // = LIVES =
       this.player.points = 0
-      // create text for lives, set font properties
+      // create text for points, set font properties
       this.scene.pointsDisplay = this.draw.text(this.player.points+'').font({
         size: 32,
         family: 'Menlo, sans-serif',
@@ -94,7 +94,7 @@ var Main = function () {
           this.bricks.push(brick)
         }
       }
-      // used for more effecient hit detection on bricks
+      // used for more efficient hit detection on bricks
       this.brickArea = {
         top: this.bricks[0].y(),
         bottom: this.bricks[(this.bricks.length)-1].y() + BRICK_H,
@@ -147,14 +147,13 @@ var Main = function () {
         // make the ball faster on hit
         this.ball.vy = -this.ball.vy * 1.10
       } else if (this.ball.vy > 0 && cy >= this.scene.height) {
-        // hit the bottom -- lose a life and reset
+        // hit the bottom -- reset game
         this.resetGame()
       }
 
       // check if we hit a brick
-      // check if we're in the right area -- for effeciency we don't technically need this
+      // check if we're in the right area -- for efficiency we don't technically need this
       if(cy > this.brickArea.top && cy < this.brickArea.bottom && cx > this.brickArea.left && cx < this.brickArea.right) {
-        // loop through bricks
         for(var i = 0; i<this.bricks.length; i++) {
           if(cy > this.bricks[i].y() && cy < this.bricks[i].y()+BRICK_H && cx > this.bricks[i].x()  && cx < this.bricks[i].x()+BRICK_W) {
             this.ball.vx = (cx - (this.bricks[i].x() + BRICK_W/2)) * 7 // magic factor
@@ -180,7 +179,7 @@ var Main = function () {
       }
 
       // update ball color based on position
-      this.ball.pos.fill(this.ball.color.at(1/this.scene.width*this.ball.pos.x()))
+      this.ball.pos.fill(this.ball.color.at(1/this.scene.width*this.ball.pos.y()))
     },
     animationFrame(ms) {
       // we get passed a timestamp in milliseconds

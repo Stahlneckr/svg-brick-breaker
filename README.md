@@ -5,3 +5,6 @@
 `npm run dev-server`
 #### Build
 `npm run build`
+
+
+Fun TODO: randomized brick patterns on reset.
