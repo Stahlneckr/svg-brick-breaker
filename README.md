@@ -1,4 +1,5 @@
-# Super simple SVG brick-breaker game with SVG.js
+Super simple SVG brick-breaker game with SVG.js
+------
 
 #### To run locally:
 `npm install`
@@ -7,4 +8,4 @@
 `npm run build`
 
 
-Fun TODO: randomized brick patterns on reset.
+**Fun TODO:** randomized brick patterns on reset.
